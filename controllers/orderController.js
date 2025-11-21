@@ -65,6 +65,9 @@ const createOrder = async (req, res) => {
       instructions: instructions || "",
       paymentStatus: "PENDING",
       orderStatus: "PLACED",
+      timeline: {
+        placedAt: new Date(), // auto timestamp
+      },
     });
 
     // This will trigger orderNumber auto-increment via pre-save hook
@@ -93,4 +96,24 @@ const createOrder = async (req, res) => {
   }
 };
 
-module.exports = { createOrder };
+const fetchOrders = async(req,res)=>{
+  try{
+    const {userId} = req.params;
+    const userExists = await User.findById(userId);
+    if(!userExists){
+      return res.status(404).json({mesage:"User not found"})
+    }
+    const orders = await Order.find({userId});
+
+    return res.status(200).json({orders})
+
+    
+
+  }
+  catch(e){
+    console.log(e);
+    return res.status(500).json({message:"Unable to get the orders"})
+  }
+}
+
+module.exports = { createOrder, fetchOrders};

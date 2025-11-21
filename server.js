@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes")
 const cartRoutes = require("./routes/cartRoutes")
 const userRoutes = require("./routes/userRoutes")
 const orderRoutes = require("./routes/orderRoutes")
+const favouriteRoutes = require("./routes/favouriteRoutes")
 require('dotenv').config();
 
 const app = express();
@@ -15,12 +16,13 @@ app.use(cors());
 
 //Routes
 
-app.use("/api/category",categoryRoutes)
+app.use("/api/categor~y",categoryRoutes)
 app.use("/api/foodItem",foodItemRoutes)
 app.use("/api/auth",authRoutes)
 app.use("/api/cart",cartRoutes)
 app.use("/api/user",userRoutes)
 app.use("/api/order",orderRoutes)
+app.use("/api/favourite",favouriteRoutes)
 
 mongoose.connect(process.env.MONGODB_URI).then(()=>{
     console.log("MONGODB CONNECTED SUCCESSFULLY");
@@ -31,5 +33,5 @@ mongoose.connect(process.env.MONGODB_URI).then(()=>{
 
 app.listen(process.env.PORT,()=>{
     console.log(`server running on the port ${process.env.PORT}`);
-    
+ 
 })

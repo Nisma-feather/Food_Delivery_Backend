@@ -1,16 +1,16 @@
-
-
 // models/Order.js
 const mongoose = require("mongoose");
-const Counter = require("./Counter")
+const Counter = require("./Counter");
 
 const orderItemSchema = new mongoose.Schema({
-
-  foodItemId: { type: mongoose.Schema.Types.ObjectId, ref: "FoodItem", required: true },
+  foodItemId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "FoodItem",
+    required: true,
+  },
   quantity: { type: Number, required: true },
   price: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
-  
 });
 
 const orderSchema = new mongoose.Schema(
@@ -26,9 +26,9 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
     items: [orderItemSchema],
-    
+
     deliveryAddress: { type: Object, required: true },
-    contactNo:{type: String, required:true },
+    contactNo: { type: String, required: true },
     paymentMethod: { type: String, enum: ["COD", "ONLINE"], default: "COD" },
     paymentStatus: {
       type: String,
@@ -47,19 +47,24 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "PLACED",
     },
-    shippingCost:{
-        type:Number,
-
+    timeline: {
+      placedAt: { type: Date, default: Date.now },
+      confirmedAt: Date,
+      pickedUpAt: Date,
+      outForDeliveryAt: Date,
+      deliveredAt: Date,
     },
-    packingCharge:{
-        type:Number
+    shippingCost: {
+      type: Number,
+    },
+    packingCharge: {
+      type: Number,
     },
     orderTotal: { type: Number, required: true },
     instructions: String,
   },
   { timestamps: true }
 );
-
 
 orderSchema.pre("save", async function (next) {
   if (this.orderNumber) return next(); // skip if already assigned
@@ -74,4 +79,4 @@ orderSchema.pre("save", async function (next) {
   next();
 });
 
-module.exports = mongoose.model('Order',orderSchema)
+module.exports = mongoose.model("Order", orderSchema);
