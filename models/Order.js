@@ -50,7 +50,7 @@ const orderSchema = new mongoose.Schema(
     timeline: {
       placedAt: { type: Date, default: Date.now },
       confirmedAt: Date,
-      pickedUpAt: Date,
+      cancelledAt: Date,
       outForDeliveryAt: Date,
       deliveredAt: Date,
     },

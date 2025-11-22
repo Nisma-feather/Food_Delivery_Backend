@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const {createOrder, fetchOrders} = require("../controllers/orderController");
+const {createOrder, fetchOrders, updateStatus,} = require("../controllers/orderController");
+const { verifyToken } = require('../middlewares/authMiddleware');
 
 router.post("/:userId", createOrder)
 router.get("/:userId", fetchOrders)
-
+router.post("/update/update-status", verifyToken,updateStatus);
 
 // const createUserorder=async(req,res)=>{
 //     try{

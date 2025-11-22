@@ -103,11 +103,9 @@ const fetchOrders = async(req,res)=>{
     if(!userExists){
       return res.status(404).json({mesage:"User not found"})
     }
-    const orders = await Order.find({userId});
+    const orders = await Order.find({ userId }).populate("items.foodItemId","name");
 
     return res.status(200).json({orders})
-
-    
 
   }
   catch(e){
@@ -116,4 +114,47 @@ const fetchOrders = async(req,res)=>{
   }
 }
 
-module.exports = { createOrder, fetchOrders};
+const updateStatus=async(req,res)=>{
+  try{
+
+    console.log("token verified")
+   
+    const {status,orderId} = req.body;
+    
+    const order = await Order.findById(orderId);
+    if(!order){
+      return res.status(200).json({message:"orderot found"})
+    }
+    order.orderStatus = status;
+    
+
+    switch (status) {
+      case "PLACED":
+        order.timeline.placedAt = new Date();
+        break;
+      case "CONFIRMED":
+        order.timeline.confirmedAt = new Date();
+        break;
+      case "OUT_FOR_DELIVERY":
+        order.timeline.outForDeliveryAt = new Date();
+        break;
+      case "DELIEVERED":
+        order.timeline.deliveredAt = new Date();
+        break;
+
+       case "CANCELLED" : 
+        order.timeline.cancelledAt = new Date();
+        break;
+    }
+
+    order.save();
+    return res.status(200).json({message:`order status updated to ${status}`})
+
+  }
+  catch(e){
+    console.log(e);
+    res.status(500).json({message:"server Error"})
+  }
+}
+
+module.exports = { createOrder, fetchOrders, updateStatus};
