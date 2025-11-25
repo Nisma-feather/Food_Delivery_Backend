@@ -16,7 +16,7 @@ app.use(cors());
 
 //Routes
 
-app.use("/api/categor~y",categoryRoutes)
+app.use("/api/category",categoryRoutes)
 app.use("/api/foodItem",foodItemRoutes)
 app.use("/api/auth",authRoutes)
 app.use("/api/cart",cartRoutes)

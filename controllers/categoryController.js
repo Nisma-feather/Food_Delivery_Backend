@@ -61,8 +61,9 @@ const deleteCategory=async(req,res)=>{
 
 const getAllCategory=async(req,res)=>{
   try{
-      
-    const categories = await Category.find();
+    const {search = ""} = req.query;
+    console.log(search)
+    const categories = await Category.find({name:{$regex:search,$options:"i"}});
     return res.status(200).json({categories})
   }
   catch(e){
