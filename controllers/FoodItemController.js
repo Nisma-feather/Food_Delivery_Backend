@@ -14,7 +14,17 @@ const createFoodItem = async(req,res)=>{
 
 const getFoodItem = async(req,res)=>{
     try{
-     const foodItems = await FoodItem.find().populate("categories","name -_id")
+     const {search,category} = req.query;
+     console.log(search,category)
+     const query={};
+     if(category){
+       query.categories = category;
+     }
+     if(search){
+        query.name = { $regex:search,$options:"i" };
+     }
+    
+     const foodItems = await FoodItem.find(query).populate("categories","name")
      return res.status(200).json({foodItems})
     }
     catch(e){
@@ -30,7 +40,7 @@ const updateFoodItem=async(req,res)=>{
         return res.status(404).json({message:"Food Item not found"})
     }
     
-    const updatedCategory = await FoodItem.findById(foodItemId,req.body,{new:true});
+    const updatedCategory = await FoodItem.findByIdAndUpdate(foodItemId,req.body,{new:true});
     return res.status(200).json({updatedCategory})
     
 
