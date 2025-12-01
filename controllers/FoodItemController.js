@@ -35,7 +35,10 @@ const getFoodItem = async(req,res)=>{
 const updateFoodItem=async(req,res)=>{
     try{ 
     const {foodItemId} = req.params;
+    console.log('updating food item',foodItemId)
+    console.log(req.body)
     const existing = await FoodItem.findById(foodItemId);
+    
     if(!existing){
         return res.status(404).json({message:"Food Item not found"})
     }
@@ -70,6 +73,7 @@ const deleteFoodItem = async(req,res)=>{
 const getFoodItemById=async(req,res)=>{
     try{
       const {foodItemId} = req.params;
+    
       if(!foodItemId){
         return res.status(400).json({message:"Missing the required field"})
       }

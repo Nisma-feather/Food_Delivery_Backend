@@ -157,4 +157,50 @@ const updateStatus=async(req,res)=>{
   }
 }
 
-module.exports = { createOrder, fetchOrders, updateStatus};
+const getOrderBasedOnStatus = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    console.log("status:", status);
+
+    const orders = await Order.find({ orderStatus: status })
+      .populate("userId", "userName email")
+      .populate("items.foodItemId", "name image");
+
+    return res.status(200).json({
+      message: "Orders fetched successfully",
+      orders,
+    });
+  } catch (e) {
+    console.error("Error in getOrderBasedOnStatus:", e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getOrderById=async(req,res)=>{
+  try{
+    const {orderId} = req.params;
+
+    const order = await Order.findById(orderId).populate("userId", "userName email")
+      .populate("items.foodItemId", "name image");
+    
+      if(!order){
+        return res.status(404).json({message:"Order not found"})
+      }
+
+      return res.status(200).json({order})
+
+
+  }
+  catch(e){
+    console.log(e);
+    return res.status(500).json({message:"failed to getthe order"})
+  }
+}
+
+
+module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById};
