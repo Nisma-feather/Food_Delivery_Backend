@@ -28,6 +28,7 @@ const checkUserExist = async (req, res) => {
   }
 };
 
+
 // ✅ Login Controller
 const Login = async (req, res) => {
   try {
@@ -71,12 +72,65 @@ const Login = async (req, res) => {
   }
 };
 
+const signUp = async (req, res) => {
+  try {
+    const { email, password, role, userName } = req.body;
+
+    // 1️⃣ Validate fields
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email & Password are required" });
+    }
+
+    // 2️⃣ Check if email already exists
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ message: "Email already exists" });
+    }
+
+    // 3️⃣ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 4️⃣ Create new user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      role: role || "user", // default user if not provided
+      userName: userName || "",
+    });
+
+    await newUser.save();
+
+    // 5️⃣ Generate token for immediate login
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res.status(201).json({
+      message: "Account created successfully",
+      token,
+      user: {
+        userId: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+        name: newUser.userName,
+      },
+    });
+  } catch (error) {
+    console.log("Signup Error:", error);
+    return res.status(500).json({ message: "Server error during signup" });
+  }
+};
+
+
 //verifyin the profile
 
 const checkauth = async(req,res) =>{
   try{
     
     if(req?.user){
+      console.log(req.user)
        return res.status(200).json({userId:req.user?.id,role:req.user?.role})
     }
     else{
@@ -204,4 +258,4 @@ const setChosenAddress = async (req, res) => {
   }
 };
 
-  module.exports = { checkUserExist, Login,checkauth,addUserAddress,getUserById,updateAddress,deleteAddress,setChosenAddress};
+  module.exports = { checkUserExist, Login,checkauth,addUserAddress,getUserById,updateAddress,deleteAddress,setChosenAddress, signUp};

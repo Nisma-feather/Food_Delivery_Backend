@@ -8,6 +8,8 @@ const cartRoutes = require("./routes/cartRoutes")
 const userRoutes = require("./routes/userRoutes")
 const orderRoutes = require("./routes/orderRoutes")
 const favouriteRoutes = require("./routes/favouriteRoutes")
+const hotelRoutes = require("./routes/hotelRoutes")
+
 require('dotenv').config();
 
 const app = express();
@@ -24,6 +26,7 @@ app.use("/api/cart",cartRoutes)
 app.use("/api/user",userRoutes)
 app.use("/api/order",orderRoutes)
 app.use("/api/favourite",favouriteRoutes)
+app.use("/api/hotel",hotelRoutes)
 
 mongoose.connect(process.env.MONGODB_URI).then(()=>{
     console.log("MONGODB CONNECTED SUCCESSFULLY");

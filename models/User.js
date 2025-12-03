@@ -33,19 +33,14 @@ const userSchema = new mongoose.Schema({
     address:[addressSchema],
     role:{
         type:String,
-        enum:["user","admin"],
+        enum:["user","restaurant"],
         default:"user"
     },
     signupType:{
       type:"String",
       enum:["mail","google","phone"]
     },
-    role:{
-      type:String,
-      enum:["user","hotel"],
-      default:'user'
-    },
-
+  
 },{timestamps:true});
 
 

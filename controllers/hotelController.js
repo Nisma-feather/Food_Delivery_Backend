@@ -14,6 +14,8 @@ const updateRestaurant = async (req, res) => {
       closingTime,
     } = req.body;
 
+    const userId = "692ff6ecbd7ce8e3b48a3e2a";
+
     if (!email) {
       return res
         .status(400)
@@ -21,7 +23,7 @@ const updateRestaurant = async (req, res) => {
     }
 
     // Find the hotel by email
-    const hotel = await Hotel.findOne({ email });
+    const hotel = await Hotel.findOne({ userId });
     if (!hotel) {
       return res.status(404).json({ message: "Hotel not found" });
     }
@@ -49,4 +51,22 @@ const updateRestaurant = async (req, res) => {
   }
 };
 
-module.exports = { updateRestaurant };
+const getRestaurantData=async(req,res)=>{
+  try{
+    const userId = "692ff6ecbd7ce8e3b48a3e2a";
+
+    const restaurantData = await Hotel.findOne({userId}).select("-email -password");
+
+    return res.status(200).json({restaurantData})
+
+  }
+  catch(e){
+    console.log(e);
+    return res.status(500).json({message:"can't able to get the restaurant data"})
+  }
+}
+
+
+
+
+module.exports = { updateRestaurant,getRestaurantData };

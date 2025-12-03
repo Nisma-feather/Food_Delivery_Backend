@@ -7,24 +7,40 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((e) => console.log(e));
 
-const createAdmin = async () => {
+// ⬇️ Function to insert hotel profile with userId + restaurantName
+const createHotelProfile = async () => {
   try {
-    // Check if admin already exists
-    const existingAdmin = await Hotel.findOne({ email: "admin@gmail.com" });
-    if (existingAdmin) {
-      console.log("Admin already exists");
+    const userId = "692ff6ecbd7ce8e3b48a3e2a";
+    const restaurantName = "My Restaurant"; 
+
+    // check if hotel already exists for this user
+    const existingHotel = await Hotel.findOne({ userId });
+
+    if (existingHotel) {
+      console.log("Hotel profile already exists for this user");
       return;
     }
 
-    // Create new admin
-    const admin = new Hotel({
-      email: "admin@gmail.com",
-      password: "admin@123",
-      
+    const newHotel = new Hotel({
+      userId, // store userId
+      restaurantName, // store restaurant name
+      email: "", // optional
+      password: "", // no admin required
+      contact: "",
+      logo: "",
+      address: {
+        street: "",
+        city: "",
+        stateName: "",
+        pincode: "",
+      },
+      openingTime: null,
+      closingTime: null,
+      role: "hotel",
     });
 
-    await admin.save(); // triggers pre-save hook for hashing password
-    console.log("✅ Admin created successfully");
+    await newHotel.save();
+    console.log("✅ Hotel profile created successfully");
   } catch (err) {
     console.log(err);
   } finally {
@@ -32,4 +48,4 @@ const createAdmin = async () => {
   }
 };
 
-createAdmin();
+createHotelProfile();

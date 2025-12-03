@@ -1,9 +1,10 @@
 const express= require('express');
 const router = express.Router();
-const {checkUserExist, Login, checkauth, addUserAddress, getUserById, updateAddress, deleteAddress, setChosenAddress} = require("../controllers/userController");
+const {checkUserExist, Login, checkauth, addUserAddress, getUserById, updateAddress, deleteAddress, setChosenAddress, signUp} = require("../controllers/userController");
 const { verifyToken } = require('../middlewares/authMiddleware');
 
-router.post("/exists-user", checkUserExist)
+router.post("/exists-user", checkUserExist);
+router.post("/signup",signUp)
 router.post("/login",Login)
 router.post("/check-auth",verifyToken,checkauth);
 router.post("/add-address/:userId",addUserAddress);

@@ -1,23 +1,22 @@
-const mongoose  = require('mongoose')
+const mongoose = require("mongoose");
+
 const hotelSchema = new mongoose.Schema(
   {
-    
-    email:{
-        type:String,
-        
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true, // One hotel per user
     },
-    password:{
-        type:String,
 
-    },
-     logo: {
+    logo: {
       type: String,
       default: "",
     },
 
     restaurantName: {
       type: String,
- 
+      required: true,
     },
 
     address: {
@@ -32,19 +31,16 @@ const hotelSchema = new mongoose.Schema(
       default: "",
     },
 
+    // Store only TIME (you can use string or date — both fine)
     openingTime: {
-      type: String, 
+      type: Date,
       default: "",
     },
 
     closingTime: {
-      type: String, 
+      type: Date,
       default: "",
     },
-    role:{
-        type:String,
-        default:"hotel"
-    }
   },
   { timestamps: true }
 );
