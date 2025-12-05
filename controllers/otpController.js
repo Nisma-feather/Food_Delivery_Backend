@@ -1,4 +1,6 @@
-const transporter = require("../config/email");
+// const transporter = require("../config/email");
+const { Resend } = require("resend");
+const resend = new Resend("re_tHDNFCRS_DE98cpqXtwTWYuva61d7EArA");
 const redisClient = require("../config/redis");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
@@ -11,24 +13,27 @@ const sendOtp = async (req, res) => {
 
     const otp = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Store in Redis for 2 minutes
     await redisClient.setEx(`otp:${email}`, 120, otp);
 
-    // Send email
-    await transporter.sendMail({
-      from: "shanthinifeathers16@gmail.com",
+    const { error } = await resend.emails.send({
+      from: "nismabanu012@gmail.com", 
       to: email,
       subject: "OTP Verification",
-      text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
+      html: `<p>Your OTP code is <strong>${otp}</strong>. It will expire in 2 minutes.</p>`,
     });
 
+    if (error) {
+      console.log("Email send error:", error);
+      return res.status(500).json({ message: "Email sending failed" });
+    }
+
     res.json({ message: "OTP sent successfully" });
+
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Server Error" });
   }
 };
-
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp, password, userName, role } = req.body; 
@@ -105,12 +110,17 @@ const sendForgotOtp = async (req, res) => {
 
     await redisClient.setEx(`resetOtp:${email}`, 180, otp); // 3 mins
 
-    await transporter.sendMail({
-      from: "shanthinifeathers16@gmail.com",
-      to: email,
-      subject: "Reset Password OTP",
-      text: `Your OTP is ${otp}. Valid for 3 minutes.`,
-    });
+    const { error } = await resend.emails.send({
+  from: "Your App <yourverifiedemail@yourdomain.com>",
+  to: email,
+  subject: "Reset Password OTP",
+  html: `<p>Your OTP is <strong>${otp}</strong>. Valid for 3 minutes.</p>`,
+});
+ if (error) {
+      console.log("Email send error:", error);
+      return res.status(500).json({ message: "Email sending failed" });
+    }
+
 
     return res.status(200).json({ message: "OTP sent successfully" });
 
