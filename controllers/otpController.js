@@ -16,7 +16,7 @@ const sendOtp = async (req, res) => {
 
     // Send email
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: "shanthinifeathers16@gmail.com",
       to: email,
       subject: "OTP Verification",
       text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
@@ -106,7 +106,7 @@ const sendForgotOtp = async (req, res) => {
     await redisClient.setEx(`resetOtp:${email}`, 180, otp); // 3 mins
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: "shanthinifeathers16@gmail.com",
       to: email,
       subject: "Reset Password OTP",
       text: `Your OTP is ${otp}. Valid for 3 minutes.`,
