@@ -174,7 +174,50 @@ const  addUserAddress=async(req,res)=>{
       console.log(e);
       return res.status(500).json({message:"cant able to get the users"})
     }
-  }; 
+  };
+  
+   
+  const updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userName, mobile } = req.body;
+    
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { 
+        userName: userName || undefined,
+        mobile: mobile || undefined 
+      },
+      { new: true } // Return updated document
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Simple success response
+    res.json({
+      message: 'Profile updated',
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.userName,
+        email: updatedUser.email,
+        mobile: updatedUser.mobile
+      }
+    });
+    
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+  
+
+  
+
+  
  
   const updateAddress=async(req,res)=>{
     try{
@@ -258,4 +301,4 @@ const setChosenAddress = async (req, res) => {
   }
 };
 
-  module.exports = { checkUserExist, Login,checkauth,addUserAddress,getUserById,updateAddress,deleteAddress,setChosenAddress, signUp};
+  module.exports = { checkUserExist, Login,checkauth,addUserAddress,getUserById,updateAddress,deleteAddress,setChosenAddress, signUp,updateUserProfile};

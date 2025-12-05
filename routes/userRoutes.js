@@ -1,6 +1,6 @@
 const express= require('express');
 const router = express.Router();
-const {checkUserExist, Login, checkauth, addUserAddress, getUserById, updateAddress, deleteAddress, setChosenAddress, signUp} = require("../controllers/userController");
+const {checkUserExist, Login, checkauth, addUserAddress, getUserById, updateAddress, deleteAddress, setChosenAddress, signUp, updateUserProfile} = require("../controllers/userController");
 const { verifyToken } = require('../middlewares/authMiddleware');
 
 router.post("/exists-user", checkUserExist);
@@ -13,8 +13,7 @@ router.put("/choose-address/:userId/:addressId",setChosenAddress);
 router.delete("/delete-address/:userId/:addressId",deleteAddress);
 
 router.get("/:userId",getUserById);
-
-
+router.put("/profile/:id",updateUserProfile)
 
 
 module.exports = router
