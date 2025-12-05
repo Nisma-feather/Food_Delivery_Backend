@@ -78,7 +78,7 @@ const getCartItems=async(req,res)=>{
     try{
       const {userId} = req.params;
       const Items = await Cart.findOne({ userId }).populate(
-        "cartItems.foodItem", "name price image"
+        "cartItems.foodItem", "name price"
       );
       return res.status(200).json({Items})
     }
