@@ -2,14 +2,14 @@ const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 const apiKey = defaultClient.authentications["api-key"];
-apiKey.apiKey = process.env.BREVO_PASS; // Your API key
+apiKey.apiKey = process.env.SMTP_PASS; // Your API key
 
 const transEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 exports.sendEmail = async (req, res) => {
   try {
     const result = await transEmailApi.sendTransacEmail({
-      sender: { email: "shanthinifeathers16.com", name: "Delivery App" },
+      sender: { email: "shanthinifeathers16@gmail.com", name: "Delivery App" },
       to: [{ email: req.body.email }],
 
       subject: "Your OTP Code",
