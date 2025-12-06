@@ -1,81 +1,87 @@
-const transporter = require("../config/email");
+const brevo = require("../config/brevoEmail"); // Brevo API
 const redisClient = require("../config/redis");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
-const jwt=require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
 
+// ------------------ SEND OTP ------------------
 const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log(email);
+    
     if (!email) return res.status(400).json({ message: "Email required" });
 
     const otp = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Store in Redis for 2 minutes
     await redisClient.setEx(`otp:${email}`, 120, otp);
 
-    // Send email
-    await transporter.sendMail({
-      from: "shanthinifeathers16@gmail.com",
-      to: email,
-      subject: "OTP Verification",
-      text: `Your OTP code is ${otp}. It will expire in 2 minutes.`,
-    });
+    // Send via Brevo API
+   await brevo.sendTransacEmail({
+     sender: { email: "shanthinifeathers16@gmail.com", name: "Feather Delivery App" },
+     to: [{ email }],
+     subject: "Your OTP Code",
+     textContent: `
+Hello,
+
+This is your verification email for the Feather Delivery App.
+
+Your OTP code is: ${otp}
+
+Please do not share this OTP with anyone. It is valid for 2 minutes only.
+
+Thank you,
+Food Delivery App 
+  `,
+   });
 
     res.json({ message: "OTP sent successfully" });
   } catch (e) {
-    console.error(e);
+    console.error("Brevo Error:", e);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
+// ------------------ VERIFY OTP + CREATE USER ------------------
 const verifyOtp = async (req, res) => {
   try {
-    const { email, otp, password, userName, role } = req.body; 
-    console.log(otp)
-    // Get OTP from Redis
-    const serverOtp = await redisClient.get(`otp:${email}`);
-    if (!serverOtp) {
-      return res.status(400).json({ message: "OTP expired, try again" });
-    }
+    const { email, otp, password, userName, role } = req.body;
 
-    if (serverOtp !== otp) {
+    const serverOtp = await redisClient.get(`otp:${email}`);
+    if (!serverOtp) return res.status(400).json({ message: "OTP expired" });
+
+    if (serverOtp !== otp)
       return res.status(401).json({ message: "Invalid OTP" });
-    }
 
     await redisClient.del(`otp:${email}`);
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ message: "User already exists" });
-    }
-   const hashPassword = await bcrypt.hash(password, 10);
 
-// Create user with role
-const newUser = await User.create({
-  email,
-  userName,
-  password: hashPassword,
-  signupType: "mail",
-  role: role || "user",
-});
+    const hashPassword = await bcrypt.hash(password, 10);
 
-    // Generate token
+    const newUser = await User.create({
+      email,
+      userName,
+      password: hashPassword,
+      signupType: "mail",
+      role: role || "user",
+    });
 
     const token = jwt.sign(
       {
         userId: newUser._id,
         email: newUser.email,
-        role: newUser.role, 
-        name: newUser.userName
+        role: newUser.role,
+        name: newUser.userName,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    return res.status(200).json({
-      message: "OTP verified successfully & user account created",
+    res.status(200).json({
+      message: "OTP Verified & User Created",
       user: {
         userId: newUser._id,
         email: newUser.email,
@@ -85,10 +91,12 @@ const newUser = await User.create({
       token,
     });
   } catch (e) {
-    console.error("Error verifying OTP:", e);
-    return res.status(500).json({ message: "Unable to verify OTP" });
+    console.error(e);
+    res.status(500).json({ message: "Unable to verify OTP" });
   }
 };
+
+// ------------------ SEND FORGOT OTP ------------------
 const sendForgotOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -96,91 +104,86 @@ const sendForgotOtp = async (req, res) => {
     if (!email) return res.status(400).json({ message: "Email required" });
 
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user)
       return res.status(404).json({ message: "Not a registered email" });
-    }
 
     const otp = Math.floor(10000 + Math.random() * 90000).toString();
 
+    await redisClient.setEx(`resetOtp:${email}`, 180, otp);
 
-    await redisClient.setEx(`resetOtp:${email}`, 180, otp); // 3 mins
+   await brevo.sendTransacEmail({
+     sender: { email: "shanthinifeathers16@gmail.com", name: "Feather Delivery App" },
+     to: [{ email }],
+     subject: "Your OTP Code",
+     textContent: `
+Hello,
 
-    await transporter.sendMail({
-      from: "shanthinifeathers16@gmail.com",
-      to: email,
-      subject: "Reset Password OTP",
-      text: `Your OTP is ${otp}. Valid for 3 minutes.`,
-    });
+This is your verification email for the Feather Delivery App.
 
-    return res.status(200).json({ message: "OTP sent successfully" });
+Your OTP code is: ${otp}
 
+Please do not share this OTP with anyone. It is valid for 2 minutes only.
+
+Thank you,
+Feather Delivery App 
+  `,
+   });
+    res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
+
+// ------------------ VERIFY FORGOT OTP ------------------
 const verifyForgotOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email & OTP required" });
-    }
-
     const storedOtp = await redisClient.get(`resetOtp:${email}`);
+    if (!storedOtp) return res.status(400).json({ message: "OTP expired" });
 
-    if (!storedOtp) {
-      return res.status(400).json({ message: "OTP expired, request again" });
-    }
-
-    if (storedOtp !== otp) {
+    if (storedOtp !== otp)
       return res.status(401).json({ message: "Incorrect OTP" });
-    }
 
-    // OTP verified: mark verification success for this email
-    await redisClient.setEx(`otpVerified:${email}`, 180, "true"); // valid for 10 mins
-    await redisClient.del(`resetOtp:${email}`); // Remove OTP
+    await redisClient.setEx(`otpVerified:${email}`, 600, "true");
+    await redisClient.del(`resetOtp:${email}`);
 
-    return res.status(200).json({ message: "OTP verified successfully" });
-
+    res.status(200).json({ message: "OTP verified successfully" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
+
+// ------------------ RESET PASSWORD ------------------
 const resetPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and new password required" });
-    }
-
     const otpVerified = await redisClient.get(`otpVerified:${email}`);
-
-    if (!otpVerified) {
-      return res.status(400).json({ message: "OTP not verified or expired" });
-    }
+    if (!otpVerified)
+      return res.status(400).json({ message: "OTP not verified" });
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(password, 10);
     await user.save();
 
-    // Cleanup
     await redisClient.del(`otpVerified:${email}`);
 
-    return res.status(200).json({ message: "Password reset successful" });
-
+    res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-
-module.exports = { sendOtp, verifyOtp,sendForgotOtp,verifyForgotOtp,resetPassword };
+module.exports = {
+  sendOtp,
+  verifyOtp,
+  sendForgotOtp,
+  verifyForgotOtp,
+  resetPassword,
+};

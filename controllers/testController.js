@@ -8,12 +8,25 @@ const transEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 exports.sendEmail = async (req, res) => {
   try {
-    const result = await transEmailApi.sendTransacEmail({
-      sender: { email: "shanthinifeathers16@gmail.com", name: "Delivery App" },
-      to: [{ email: req.body.email }],
-
+    const result = await brevo.sendTransacEmail({
+      sender: {
+        email: "noreply@shanthinifeathers16.com",
+        name: "Delivery App",
+      },
+      to: [{ email }],
       subject: "Your OTP Code",
-      htmlContent: `<h1>Test Email worked successsfully</h1>`,
+      textContent: `
+Hello,
+
+This is your verification email for the Food Delivery App.
+
+Your OTP code is: ${otp}
+
+Please do not share this OTP with anyone. It is valid for 2 minutes only.
+
+Thank you,
+Food Delivery App Team
+  `,
     });
 
     console.log("Email sent:", result);
