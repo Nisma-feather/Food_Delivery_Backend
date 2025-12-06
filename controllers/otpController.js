@@ -3,7 +3,7 @@ const redisClient = require("../config/redis");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt=require("jsonwebtoken")
-z
+
 const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
