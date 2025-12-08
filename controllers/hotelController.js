@@ -1,5 +1,7 @@
 const Hotel = require("../models/Hotel");
 const bcrypt = require("bcrypt");
+const User = require("../models/User")
+const Order = require("../models/Order");
 
 // Controller to update hotel details
 const updateRestaurant = async (req, res) => {
@@ -64,9 +66,152 @@ const getRestaurantData=async(req,res)=>{
     console.log(e);
     return res.status(500).json({message:"can't able to get the restaurant data"})
   }
+
+  
 }
 
+const addDeliveryPartner = async(req,res)=>{
+   try {
+    console.log(req.body)
+    const { name, email, password, mobile } = req.body;
+
+    if (!name || !email || !password || !mobile) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Email already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const deliveryPartner = await User.create({
+      userName: name,
+      email,
+      password: hashedPassword,
+      mobile,
+      role: "delivery",
+    });
+
+    res.status(201).json({ message: "Delivery partner created", deliveryPartner });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+
+
+}
+const assignDeliveryPartner = async (req, res) => {
+  try {
+    const { orderId, deliveryPartnerId } = req.body;
+
+    if (!orderId || !deliveryPartnerId) {
+      return res
+        .status(400)
+        .json({ message: "orderId and deliveryPartnerId required" });
+    }
+
+    // 1. Check order exists
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // 2. Check delivery partner exists
+    const partner = await User.findOne({
+      _id: deliveryPartnerId,
+      role: "delivery",
+    });
+
+    if (!partner) {
+      return res.status(404).json({ message: "Delivery partner not found" });
+    }
+
+    // 3. Update order with delivery partner and status
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        deliveryPartnerId,
+       
+      },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: "Order assigned to delivery partner",
+      order: updatedOrder,
+    });
+  } catch (e) {
+    console.log(e);
+    return res
+      .status(500)
+      .json({ message: "Unable to assign delivery partner" });
+  }
+};
+
+const acceptOrderBydeliveryPartner=async()=>{
+  try{
+    const {orderId,deliveryPartnerId} = req.body;
+
+    const isExisting = await Order.find({_id:orderId,deliveryPartnerId});
+    if(!isExisting){
+      return res.status(404).json({message:"The order or delivery partner not found"})
+    }
+    isExisting.deliveryAccepted = true
+    isExisting.outForDeliveryAt = new Date();
+    isExisting.orderStatus="OUT_FOR_DELIVERY"
+
+    isExisting.save();
+  }
+  catch(e){
+    console.log(e);
+    return res.status(500).json({message:""})
+  }
+}
+
+const getDeliveryPartnerOrders = async (req, res) => {
+  try {
+    const { deliveryPartnerId } = req.body; // or req.user._id if using JWT
+    const { status } = req.params;
+
+    if (!deliveryPartnerId || !status) {
+      return res.status(400).json({ message: "Required data missing" });
+    }
+
+    // Get all matching orders
+    const orders = await Order.find({
+      deliveryPartnerId: deliveryPartnerId,
+      orderStatus: status.toUpperCase(), // ensure correct format
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({ orders });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({
+      message: "Can't retrieve orders",
+    });
+  }
+};
+
+const getDeliveryPartners = async (req, res) => {
+  try {
+    const partners = await User.find({ role: "delivery" }).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      count: partners.length,
+      partners,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch delivery partners",
+    });
+  }
+};
 
 
 
-module.exports = { updateRestaurant,getRestaurantData };
+
+
+module.exports = { updateRestaurant,getRestaurantData, addDeliveryPartner,assignDeliveryPartner, getDeliveryPartnerOrders,acceptOrderBydeliveryPartner,getDeliveryPartners};

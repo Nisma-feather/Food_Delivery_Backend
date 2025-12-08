@@ -203,4 +203,30 @@ const getOrderById=async(req,res)=>{
 }
 
 
-module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById};
+
+const getDeliveryPartnerOrders = async (req, res) => {
+  try {
+    const { deliveryPartnerId } = req.body; 
+    const { status } = req.params;
+
+    if (!deliveryPartnerId || !status) {
+      return res.status(400).json({ message: "Required data missing" });
+    }
+
+    // Get all matching orders
+    const orders = await Order.find({
+      deliveryPartnerId: deliveryPartnerId,
+      orderStatus: status.toUpperCase(), 
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({ orders });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({
+      message: "Can't retrieve orders",
+    });
+  }
+};
+
+
+module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById, getDeliveryPartnerOrders};

@@ -62,6 +62,8 @@ const orderSchema = new mongoose.Schema(
     },
     orderTotal: { type: Number, required: true },
     instructions: String,
+    deliveryPartnerId:{type: mongoose.Schema.Types.ObjectId, ref:"User"},
+    deliveryAccepted:{type:Boolean,default:false},
   },
   { timestamps: true }
 );
