@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         
     },
+    plainPassword:{type:String},
     address:[addressSchema],
     role:{
         type:String,

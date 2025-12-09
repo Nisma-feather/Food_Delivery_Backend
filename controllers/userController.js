@@ -301,4 +301,6 @@ const setChosenAddress = async (req, res) => {
   }
 };
 
+
+
   module.exports = { checkUserExist, Login,checkauth,addUserAddress,getUserById,updateAddress,deleteAddress,setChosenAddress, signUp,updateUserProfile};

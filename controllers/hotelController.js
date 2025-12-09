@@ -73,9 +73,9 @@ const getRestaurantData=async(req,res)=>{
 const addDeliveryPartner = async(req,res)=>{
    try {
     console.log(req.body)
-    const { name, email, password, mobile } = req.body;
+    const { userName, email, password, mobile } = req.body;
 
-    if (!name || !email || !password || !mobile) {
+    if (!userName || !email || !password || !mobile) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -85,7 +85,7 @@ const addDeliveryPartner = async(req,res)=>{
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const deliveryPartner = await User.create({
-      userName: name,
+      userName,
       email,
       password: hashedPassword,
       mobile,
