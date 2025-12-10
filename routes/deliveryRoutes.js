@@ -14,7 +14,7 @@ router.post("/partner", addDeliveryPartner);
 router.get("/partners", getDeliveryPartners);
 router.post("/assign", assignDeliveryPartner);
 router.post("/accept-order", acceptOrderByDeliveryPartner);
-router.get("/my-orders/:status", getDeliveryPartnerOrders);
+router.post("/my-orders/:status", getDeliveryPartnerOrders);
 router.delete("/:userId",deleteDeliveryPartner);
 router.put("/partner/:partnerId",updateDeliveryPartner)
 

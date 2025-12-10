@@ -116,8 +116,8 @@ const assignDeliveryPartner = async (req, res) => {
 
 const acceptOrderByDeliveryPartner = async (req, res) => {
   try {
-    const { orderId } = req.body;
-    const deliveryPartnerId = req.user._id; // Assuming authentication middleware
+    const { orderId, deliveryPartnerId } = req.body;
+    // const deliveryPartnerId = req.user._id; // Assuming authentication middleware
 
     const order = await Order.findOne({
       _id: orderId,
@@ -157,7 +157,8 @@ const acceptOrderByDeliveryPartner = async (req, res) => {
 
 const getDeliveryPartnerOrders = async (req, res) => {
   try {
-    const deliveryPartnerId = req.user._id; // From authentication
+    // const deliveryPartnerId = req.user._id; // From authentication
+    const {deliveryPartnerId} = req.body
     const { status } = req.params;
 
     if (!status) {
