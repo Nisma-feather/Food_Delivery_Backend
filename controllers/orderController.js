@@ -159,27 +159,60 @@ const updateStatus=async(req,res)=>{
 
 const getOrderBasedOnStatus = async (req, res) => {
   try {
-    const { status } = req.query;
+    let { status, page = 1, limit = 10, search = "" } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
 
     if (!status) {
       return res.status(400).json({ message: "Status is required" });
     }
 
-    console.log("status:", status);
+    const skip = (page - 1) * limit;
 
-    const orders = await Order.find({ orderStatus: status })
+    let query = {
+      orderStatus: status,
+    };
+
+    // SEARCH FILTER
+    if (search.trim() !== "") {
+      const isNumber = /^\d+$/.test(search);
+
+      query.$or = [
+        { contactNo: { $regex: search, $options: "i" } },
+        { "deliveryAddress.fullAddress": { $regex: search, $options: "i" } },
+        { "deliveryAddress.city": { $regex: search, $options: "i" } },
+      ];
+
+      // only add orderNumber if numeric
+      if (isNumber) {
+        query.$or.push({ orderNumber: Number(search) });
+      }
+    }
+
+    // FETCH ORDERS
+    const orders = await Order.find(query)
       .populate("userId", "userName email")
-      .populate("items.foodItemId", "name image");
+      .populate("items.foodItemId", "name image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const documentCount = await Order.countDocuments(query);
 
     return res.status(200).json({
       message: "Orders fetched successfully",
       orders,
+      currentPage: page,
+      totalPages: Math.ceil(documentCount / limit),
+      totalItems: documentCount,
     });
   } catch (e) {
     console.error("Error in getOrderBasedOnStatus:", e);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const getOrderById=async(req,res)=>{
   try{
@@ -205,30 +238,43 @@ const getOrderById=async(req,res)=>{
 }
 
 
-
-const getDeliveryPartnerOrders = async (req, res) => {
+const updatePaymentStatus = async (req, res) => {
   try {
-    const { deliveryPartnerId } = req.body; 
-    const { status } = req.params;
+    const { orderId } = req.params;
+    const { paymentStatus } = req.body;
 
-    if (!deliveryPartnerId || !status) {
-      return res.status(400).json({ message: "Required data missing" });
+    // Check if orderId was sent
+    if (!orderId) {
+      return res.status(400).json({ message: "Order ID is required" });
     }
 
-    // Get all matching orders
-    const orders = await Order.find({
-      deliveryPartnerId: deliveryPartnerId,
-      orderStatus: status.toUpperCase(), 
-    }).sort({ createdAt: -1 });
+    // Find order
+    const orderExists = await Order.findById(orderId);
+    if (!orderExists) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-    return res.status(200).json({ orders });
-  } catch (e) {
-    console.log(e);
+    // Update payment status and return updated document
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { paymentStatus },
+      { new: true } // returns updated document
+    );
+
+    return res.status(200).json({
+      message: "Payment status updated successfully",
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
     return res.status(500).json({
-      message: "Can't retrieve orders",
+      message: "Server error while updating payment status",
     });
   }
 };
 
 
-module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById, getDeliveryPartnerOrders};
+
+
+
+module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById,  updatePaymentStatus};

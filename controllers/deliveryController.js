@@ -157,18 +157,16 @@ const acceptOrderByDeliveryPartner = async (req, res) => {
 
 const getDeliveryPartnerOrders = async (req, res) => {
   try {
-    // const deliveryPartnerId = req.user._id; // From authentication
-    const {deliveryPartnerId} = req.body
+    const { deliveryPartnerId } = req.body;
     const { status } = req.params;
 
-    if (!status) {
-      return res.status(400).json({
-        message: "Status parameter is required",
-        
-      });
-    }
+    // Pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    // Validate status
+    const search = req.query.search || "";
+
     const validStatuses = [
       "PLACED",
       "CONFIRMED",
@@ -176,6 +174,7 @@ const getDeliveryPartnerOrders = async (req, res) => {
       "DELIVERED",
       "CANCELLED",
     ];
+
     const statusUpper = status.toUpperCase();
 
     if (!validStatuses.includes(statusUpper)) {
@@ -185,15 +184,42 @@ const getDeliveryPartnerOrders = async (req, res) => {
       });
     }
 
-    const orders = await Order.find({
+    let query = {
       deliveryPartnerId,
       orderStatus: statusUpper,
-    })
-      .sort({ createdAt: -1 })
+    };
+
+    // SEARCH FIX
+    if (search.trim() !== "") {
+      const users = await User.find({
+        userName: { $regex: search, $options: "i" },
+      }).select("_id");
+ 
+      const userIds = users.map((u) => u._id);
+        const isNumber = /^\d+$/.test(search);  
+      query.$or = [
       
+        { contactNo: { $regex: search, $options: "i" } },
+        { userId: { $in: userIds } },
+      ];
+       if (isNumber) {
+    query.$or.push({ orderNumber: Number(search) });
+  }
+    }
+
+    const orders = await Order.find(query)
+      .populate("userId", "userName email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalOrders = await Order.countDocuments(query);
 
     return res.status(200).json({
       success: true,
+      totalOrders,
+      currentPage: page,
+      totalPages: Math.ceil(totalOrders / limit),
       count: orders.length,
       orders,
     });
