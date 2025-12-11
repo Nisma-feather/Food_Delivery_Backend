@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const FoodItem = require("../models/FoodItem");
 const User = require("../models/User");
 const Cart = require("../models/Cart");
+const {io,connectedUsers} = require("../socket/socket")
 
 const createOrder = async (req, res) => {
   try {
@@ -72,6 +73,13 @@ const createOrder = async (req, res) => {
 
     // This will trigger orderNumber auto-increment via pre-save hook
     await order.save();
+
+    const restaurantId = "692ff6ecbd7ce8e3b48a3e2a";
+     const socketId = connectedUsers.restaurant[restaurantId];
+
+     if (socketId) {
+       io.to(socketId).emit("new-order", order);
+     }
     const foodIds = checkoutItems.map((item) => item.foodItem._id);
 
     await Cart.updateOne(

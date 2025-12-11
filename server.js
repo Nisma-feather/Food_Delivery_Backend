@@ -14,6 +14,7 @@ const deliveryRoutes = require("./routes/deliveryRoutes")
 
 
 
+
 require('dotenv').config();
 
 const app = express();
@@ -40,7 +41,15 @@ mongoose.connect(process.env.MONGODB_URI).then(()=>{
     console.log("MONGODB CONNECTION FAILED",e)
 })
 
-app.listen(process.env.PORT,()=>{
-    console.log(`server running on the port ${process.env.PORT}`);
- 
-})
+// Create HTTP server
+const http = require('http');
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const { initSocket } = require('./socket/socket');
+initSocket(server);
+
+// Start server
+server.listen(process.env.PORT, () => {
+  console.log(`Server running on port ${process.env.PORT}`);
+});
