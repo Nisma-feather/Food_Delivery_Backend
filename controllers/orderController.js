@@ -2,7 +2,7 @@ const Order = require("../models/Order");
 const FoodItem = require("../models/FoodItem");
 const User = require("../models/User");
 const Cart = require("../models/Cart");
-const {io,connectedUsers} = require("../socket/socket")
+const {getIO,connectedUsers} = require("../socket/socket")
 
 const createOrder = async (req, res) => {
   try {
@@ -16,6 +16,9 @@ const createOrder = async (req, res) => {
       paymentMethod,
       instructions,
     } = req.body;
+
+    console.log("users order Data",req.body);
+    console.log("checkout items",checkoutItems)
 
     // Validate User
     const existingUser = await User.findById(userId);
@@ -73,13 +76,19 @@ const createOrder = async (req, res) => {
 
     // This will trigger orderNumber auto-increment via pre-save hook
     await order.save();
+    const io = getIO();
 
     const restaurantId = "692ff6ecbd7ce8e3b48a3e2a";
      const socketId = connectedUsers.restaurant[restaurantId];
 
-     if (socketId) {
-       io.to(socketId).emit("new-order", order);
-     }
+
+    if (socketId) {
+      io.to(socketId).emit("new-order", order);
+      console.log("Event emitted to restaurant:", order.orderNumber);
+    } else {
+      console.log("No socket found for restaurantId:", restaurantId);
+    }
+    
     const foodIds = checkoutItems.map((item) => item.foodItem._id);
 
     await Cart.updateOne(
@@ -167,10 +176,11 @@ const updateStatus=async(req,res)=>{
 
 const getOrderBasedOnStatus = async (req, res) => {
   try {
-    let { status, page = 1, limit = 10, search = "" } = req.query;
+    let { status, page = 1, limit = 10, search = "", sort = 1 } = req.query;
 
     page = Number(page);
     limit = Number(limit);
+    sort = Number(sort);
 
     if (!status) {
       return res.status(400).json({ message: "Status is required" });
@@ -192,7 +202,6 @@ const getOrderBasedOnStatus = async (req, res) => {
         { "deliveryAddress.city": { $regex: search, $options: "i" } },
       ];
 
-      // only add orderNumber if numeric
       if (isNumber) {
         query.$or.push({ orderNumber: Number(search) });
       }
@@ -202,11 +211,18 @@ const getOrderBasedOnStatus = async (req, res) => {
     const orders = await Order.find(query)
       .populate("userId", "userName email")
       .populate("items.foodItemId", "name image")
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: sort })
       .skip(skip)
       .limit(limit);
 
+    // TOTAL DOCUMENT COUNT
     const documentCount = await Order.countDocuments(query);
+
+    // 🔥 COUNT UNREAD ORDERS FOR RESTAURANT
+    const unreadCount = await Order.countDocuments({
+      orderStatus: "PLACED",
+      readByRestaurant: false,
+    });
 
     return res.status(200).json({
       message: "Orders fetched successfully",
@@ -214,6 +230,8 @@ const getOrderBasedOnStatus = async (req, res) => {
       currentPage: page,
       totalPages: Math.ceil(documentCount / limit),
       totalItems: documentCount,
+
+      unreadCount, // 🔥 added here
     });
   } catch (e) {
     console.error("Error in getOrderBasedOnStatus:", e);
@@ -280,9 +298,59 @@ const updatePaymentStatus = async (req, res) => {
     });
   }
 };
+const updateReadStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { readByRestaurant, readByDeliveryPartner } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ message: "Order ID is required" });
+    }
+
+    // Validate input -> only one field allowed
+    if (
+      (readByRestaurant === undefined && readByDeliveryPartner === undefined) ||
+      (readByRestaurant !== undefined && readByDeliveryPartner !== undefined)
+    ) {
+      return res.status(400).json({
+        message:
+          "Send only one value: either readByRestaurant OR readByDeliveryPartner",
+      });
+    }
+
+    let updateField = {};
+
+    if (readByRestaurant !== undefined) {
+      updateField.readByRestaurant = readByRestaurant;
+    }
+
+    if (readByDeliveryPartner !== undefined) {
+      updateField.readByDeliveryPartner = readByDeliveryPartner;
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { $set: updateField },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    return res.status(200).json({
+      message: "Read status updated successfully",
+      order: updatedOrder,
+    });
+  } catch (err) {
+    console.error("Error updating read status:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 
 
 
 
-module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById,  updatePaymentStatus};
+
+module.exports = { createOrder, fetchOrders, updateStatus, getOrderBasedOnStatus,getOrderById,  updatePaymentStatus, updateReadStatus};

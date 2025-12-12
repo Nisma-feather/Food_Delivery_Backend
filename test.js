@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Hotel = require("./models/Hotel");
 require("dotenv").config();
+const Order = require("./models/Order")
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -8,44 +9,62 @@ mongoose
   .catch((e) => console.log(e));
 
 // ⬇️ Function to insert hotel profile with userId + restaurantName
-const createHotelProfile = async () => {
+const updateReadFields = async () => {
   try {
-    const userId = "692ff6ecbd7ce8e3b48a3e2a";
-    const restaurantName = "My Restaurant"; 
+    console.log("Updating orders...");
 
-    // check if hotel already exists for this user
-    const existingHotel = await Hotel.findOne({ userId });
+    // 1. Add fields to all orders if missing
+    await Order.updateMany(
+      { readByRestaurant: { $exists: false } },
+      { $set: { readByRestaurant: false } }
+    );
 
-    if (existingHotel) {
-      console.log("Hotel profile already exists for this user");
-      return;
-    }
+    await Order.updateMany(
+      { readByDeliveryPartner: { $exists: false } },
+      { $set: { readByDeliveryPartner: false } }
+    );
 
-    const newHotel = new Hotel({
-      userId, // store userId
-      restaurantName, // store restaurant name
-      email: "", // optional
-      password: "", // no admin required
-      contact: "",
-      logo: "",
-      address: {
-        street: "",
-        city: "",
-        stateName: "",
-        pincode: "",
-      },
-      openingTime: null,
-      closingTime: null,
-      role: "hotel",
-    });
+    // 2. Apply logic based on status
 
-    await newHotel.save();
-    console.log("✅ Hotel profile created successfully");
+    // CASE 1: PLACED → both false
+    await Order.updateMany(
+      { orderStatus: "PLACED" },
+      {
+        $set: {
+          readByRestaurant: false,
+          readByDeliveryPartner: false,
+        },
+      }
+    );
+
+    // CASE 2: CONFIRMED → restaurant:true, delivery:false
+    await Order.updateMany(
+      { orderStatus: "CONFIRMED" },
+      {
+        $set: {
+          readByRestaurant: true,
+          readByDeliveryPartner: false,
+        },
+      }
+    );
+
+    // CASE 3: OUT_FOR_DELIVERY & DELIVERED → both true
+    await Order.updateMany(
+      { orderStatus: { $in: ["OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"] } },
+      {
+        $set: {
+          readByRestaurant: true,
+          readByDeliveryPartner: true,
+        },
+      }
+    );
+
+    console.log("Order fields updated successfully!");
+    process.exit();
   } catch (err) {
-    console.log(err);
-  } finally {
-    mongoose.connection.close();
+    console.error("Error updating:", err);
+    process.exit(1);
   }
 };
 
-createHotelProfile();
+updateReadFields();

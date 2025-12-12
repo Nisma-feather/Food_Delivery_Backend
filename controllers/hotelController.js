@@ -2,6 +2,7 @@ const Hotel = require("../models/Hotel");
 const bcrypt = require("bcrypt");
 const User = require("../models/User")
 const Order = require("../models/Order");
+const { getIO, connectedUsers } = require("../socket/socket");
 
 // Controller to update hotel details
 const updateRestaurant = async (req, res) => {
@@ -135,6 +136,16 @@ const assignDeliveryPartner = async (req, res) => {
       },
       { new: true }
     );
+      const io = getIO();
+      const deliverySocket = connectedUsers.delivery[deliveryPartnerId];
+
+      if (deliverySocket) {
+        console.log("Sending order to socket:", deliverySocket);
+
+        io.to(deliverySocket).emit("order-assigned", updatedOrder);
+      } else {
+        console.log("Delivery partner is OFFLINE, cannot send socket event");
+      }
 
     return res.status(200).json({
       message: "Order assigned to delivery partner",

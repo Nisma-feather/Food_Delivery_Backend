@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Order = require("../models/Order");
 
 
+
 //Adding a New Delivery Partner
 const addDeliveryPartner = async(req,res)=>{
    try {
@@ -83,12 +84,12 @@ const assignDeliveryPartner = async (req, res) => {
       return res.status(404).json({ message: "Delivery partner not found" });
     }
 
-     if (order.deliveryPartnerId) {
-       return res.status(400).json({
-         message: "Order is already assigned to a delivery partner",
-         currentPartnerId: order.deliveryPartnerId,
-       });
-     }
+    //  if (order.deliveryPartnerId) {
+    //    return res.status(400).json({
+    //      message: "Order is already assigned to a delivery partner",
+    //      currentPartnerId: order.deliveryPartnerId,
+    //    });
+    //  }
 
     // 3. Update order with delivery partner and status
     const updatedOrder = await Order.findByIdAndUpdate(
@@ -99,7 +100,8 @@ const assignDeliveryPartner = async (req, res) => {
       },
       { new: true }
     );
-
+    
+    
     return res.status(200).json({
       message: "Order assigned to delivery partner",
       order: updatedOrder,

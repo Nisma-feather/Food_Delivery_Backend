@@ -18,6 +18,7 @@ const initSocket = (server) => {
     console.log("Socket connected:", socket.id);
 
     socket.on("register", ({ role, userId }) => {
+       console.log("REGISTER RECEIVED:", role, userId, "socket:", socket.id);
       connectedUsers[role][userId] = socket.id;
       socket.role = role;
       socket.userId = userId;
@@ -33,4 +34,7 @@ const initSocket = (server) => {
   });
 };
 
-module.exports = { initSocket, connectedUsers };
+// ✅ IMPORTANT — gives controller access to io
+const getIO = () => io;
+
+module.exports = { initSocket, getIO, connectedUsers };
