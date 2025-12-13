@@ -12,25 +12,57 @@ const createFoodItem = async(req,res)=>{
     }
 }
 
-const getFoodItem = async(req,res)=>{
-    try{
-     const {search,category} = req.query;
-     console.log(search,category)
-     const query={};
-     if(category){
-       query.categories = category;
-     }
-     if(search){
-        query.name = { $regex:search,$options:"i" };
-     }
-    
-     const foodItems = await FoodItem.find(query).populate("categories","name")
-     return res.status(200).json({foodItems})
+
+
+const getFoodItem = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      category,
+    } = req.query;
+
+    const currentPage = Number(page);
+    const perPage = Number(limit);
+
+    const query = {};
+
+    // 🔍 Search
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
     }
-    catch(e){
-        console.log(e)
+
+    // 🏷 Category filter
+    if (category && category !== "ALL") {
+      query.categories = category;
     }
-}
+
+    // 📊 Count total documents
+    const totalCount = await FoodItem.countDocuments(query);
+
+    const totalPages = Math.ceil(totalCount / perPage);
+
+    // 🍔 Fetch paginated data
+    const foodItems = await FoodItem.find(query)
+      .populate("categories", "name")
+      .sort({ createdAt: -1 }) // IMPORTANT (stable pagination)
+      .skip((currentPage - 1) * perPage)
+      .limit(perPage);
+
+    res.status(200).json({
+      foodItems,
+      totalPages,
+      currentPage,
+    });
+  } catch (error) {
+    console.error("Error fetching food items:", error);
+    res.status(500).json({ message: "Failed to fetch food items" });
+  }
+};
+
+
+
 
 const updateFoodItem=async(req,res)=>{
     try{ 
