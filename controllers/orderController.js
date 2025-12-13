@@ -120,7 +120,9 @@ const fetchOrders = async(req,res)=>{
     if(!userExists){
       return res.status(404).json({mesage:"User not found"})
     }
-    const orders = await Order.find({ userId }).populate("items.foodItemId","name");
+    const orders = await Order.find({ userId })
+      .populate("items.foodItemId", "name image")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({orders})
 
@@ -247,7 +249,7 @@ const getOrderById=async(req,res)=>{
     const order = await Order.findById(orderId)
       .populate("userId", "userName email")
       .populate("items.foodItemId", "name image")
-      .populate("deliveryPartnerId","userName mobile");
+      .populate("deliveryPartnerId","userName mobile")
     
       if(!order){
         return res.status(404).json({message:"Order not found"})
@@ -337,7 +339,7 @@ const updateReadStatus = async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ message: "Order not found" });
     }
-
+   console.log("read by status updated successfully")
     return res.status(200).json({
       message: "Read status updated successfully",
       order: updatedOrder,

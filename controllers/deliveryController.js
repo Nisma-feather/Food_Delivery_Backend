@@ -162,6 +162,10 @@ const getDeliveryPartnerOrders = async (req, res) => {
     const { deliveryPartnerId } = req.body;
     const { status } = req.params;
 
+    if (!deliveryPartnerId) {
+      return res.status(400).json({ message: "deliveryPartnerId required" });
+    }
+
     // Pagination
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -186,32 +190,46 @@ const getDeliveryPartnerOrders = async (req, res) => {
       });
     }
 
+    /* ---------------- BASE QUERY ---------------- */
     let query = {
       deliveryPartnerId,
       orderStatus: statusUpper,
     };
 
-    // SEARCH FIX
+    /* ---------------- SEARCH ---------------- */
     if (search.trim() !== "") {
       const users = await User.find({
         userName: { $regex: search, $options: "i" },
       }).select("_id");
- 
+
       const userIds = users.map((u) => u._id);
-        const isNumber = /^\d+$/.test(search);  
+      const isNumber = /^\d+$/.test(search);
+
       query.$or = [
-      
         { contactNo: { $regex: search, $options: "i" } },
         { userId: { $in: userIds } },
       ];
-       if (isNumber) {
-    query.$or.push({ orderNumber: Number(search) });
-  }
+
+      if (isNumber) {
+        query.$or.push({ orderNumber: Number(search) });
+      }
     }
 
+    /* ---------------- SORT LOGIC ---------------- */
+   let sortOption = { createdAt: 1 }; // default
+
+   if (statusUpper === "DELIVERED") {
+     sortOption = {
+       "timeline.deliveredAt": -1, // primary
+       createdAt: -1, // fallback
+     };
+   }
+
+
+    /* ---------------- FETCH ---------------- */
     const orders = await Order.find(query)
       .populate("userId", "userName email")
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(limit);
 
@@ -226,13 +244,14 @@ const getDeliveryPartnerOrders = async (req, res) => {
       orders,
     });
   } catch (e) {
-    console.log(e);
+    console.error("getDeliveryPartnerOrders error:", e);
     return res.status(500).json({
       success: false,
       message: "Unable to fetch orders",
     });
   }
 };
+
 
 const deleteDeliveryPartner = async(req,res)=>{
     try{ 
